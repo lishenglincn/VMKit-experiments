@@ -1,0 +1,14 @@
+To compile:
+
+1. Install vmkit by using the instructions in http://vmkit.llvm.org
+2. Put clang in your PATH environment variable
+3. ./bootstrap.sh
+4. ./configure
+     --with-vmkit-src=source files of vmkit
+     --with-vmkit-obj=object files of vmkit
+5. make
+
+Good luck!
+
+
+

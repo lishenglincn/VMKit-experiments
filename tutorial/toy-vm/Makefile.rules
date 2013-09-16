@@ -1,0 +1,185 @@
+
+include $(LEVEL)/Makefile.config
+
+ifneq ($(DEBUG),0)
+DEBUG_FLG:=$(DEBUG)
+BUILD_MODE=Debug
+else
+DEBUG_FLG=0
+BUILD_MODE=Release
+endif
+OPTIONS_ONLY=1
+include $(VMKIT_SRC_ROOT)/Makefile.common
+DEBUG:=$(DEBUG_FLG)
+
+RELEASE=$(LEVEL)/$(BUILD_MODE)
+BINDIR=$(RELEASE)/bin
+LIBDIR=$(RELEASE)/lib
+BUILDDIR=.$(BUILD_MODE)
+
+ifdef TOOL
+main_target=$(BINDIR)/$(TOOL) $(LIBDIR)/$(TOOL)-runtime.bc
+else
+ifdef MODULE
+main_target=$(LIBDIR)/$(MODULE)-content.bc
+endif
+endif
+
+OPTIM=-O3
+
+DEPEND_OPTIONS=-MMD -MP -MF "$(BUILDDIR)/$*.d.tmp" -MT "$(BUILDDIR)/$*.bc" -MT "$(BUILDDIR)/$*.d"
+DOM=then mv -f "$(BUILDDIR)/$*.d.tmp" "$(BUILDDIR)/$*.d"; else rm -f "$(BUILDDIR)/$*.d.tmp"; exit 1; fi
+
+INCLUDES=-I$(VMKIT_SRC_ROOT)/include -I$(VMKIT_SRC_ROOT)/lib/vmkit/MMTk/ -I$(LEVEL)/lib -I$(BUILDDIR)
+
+CFLAGS+=-O0 -Wall -Wno-unused `$(LLVM_CONFIG) --cflags` $(ANTLR_CFLAGS) -std=c99 -Wno-tautological-compare -Wno-parentheses-equality $(INCLUDES) -ferror-limit=3 -fmacro-backtrace-limit=0 -fno-omit-frame-pointer
+CXXFLAGS+=-O0 -Wall -Wno-unused `$(LLVM_CONFIG) --cxxflags` $(INCLUDES) -ferror-limit=1 -fmacro-backtrace-limit=0 -fno-omit-frame-pointer
+
+ifeq ($(DEBUG),1)
+CFLAGS+= -g
+CXXFLAGS+= -g
+endif
+
+VMKIT_COMPONENTS = FinalMMTk J3 Classpath Vmkit VmkitCompiler CommonThread FinalMMTk 
+LINK_COMPONENTS = jit nativecodegen scalaropts instrumentation ipa ipo core bitreader 
+
+LIBS= `$(LLVM_CONFIG) --ldflags` \
+		$(ANTLR_LDFLAGS) \
+		$(patsubst %,$(VMKIT_OBJ_ROOT)/$(VMKIT_BUILD_NAME)/lib/lib%.a,\
+					$(VMKIT_COMPONENTS)) \
+		-lz `$(LLVM_CONFIG) --libs $(LINK_COMPONENTS)`
+
+ifndef PROF
+PROF=.
+endif
+
+Echo=@echo [$(PROJECT_NAME) $(PROF)]:
+
+ifndef VERBOSE
+  Verb := @
+endif
+
+OBJ+=$(patsubst %,$(BUILDDIR)/%,$(GEN_OBJ)) \
+		 $(patsubst %.c,$(BUILDDIR)/%.bc,$(wildcard *.c)) \
+		 $(patsubst %.cc,$(BUILDDIR)/%.bc,$(wildcard *.cc)) \
+		 $(patsubst %.cpp,$(BUILDDIR)/%.bc,$(wildcard *.cpp))
+
+DEPENDENCIES=$(patsubst %.bc, %.d, $(OBJ))
+
+.PHONY: all all-subs bootstrap tidy clean distclean local-clean
+.SECONDARY: 
+.SUFFIXES:
+
+all: all-subs $(main_target)
+
+all-subs clean-subs distclean-subs tidy-subs:
+ifdef SUB_DIRS
+	$(Verb) if [ x"$(SUB_DIRS)" != x ]; then for f in $(SUB_DIRS); do $(MAKE) -C $$f $(patsubst %-subs,%,$@) PROF=$(PROF)/$$f; done; fi;
+endif
+
+ifdef TOOL
+$(BINDIR)/$(TOOL): $(BUILDDIR)/$(TOOL)-binary.s $(BUILDDIR)/GenFrametables.bc 
+	$(Echo) Linking $@
+	$(Verb) mkdir -p $(BINDIR) && $(CLANGXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+$(BUILDDIR)/GenFrametables.cc: $(BUILDDIR)/$(TOOL)-binary.s
+	$(Echo) Generating frame tables initializer for $<
+	$(Verb) echo '#include "vmkit/JIT.h"' > $@
+	$(Verb) cat $^ | grep __frametable | grep -v .glob | sed -e 's/_*\([^:]*\):/extern "C" vmkit::CompiledFrames \1;/' >> $@
+	$(Verb) echo "vmkit::CompiledFrames* frametables[] = {" >> $@
+	$(Verb) cat $^ | grep __frametable | grep -v .glob | sed -e 's/_*\([^:]*\):/\&\1,/' >> $@
+	$(Verb) echo "  NULL };" >> $@
+
+$(BUILDDIR)/%.s: $(BUILDDIR)/%.bc
+	$(Echo) "Compiling $@"
+	$(Verb) mkdir -p $(BUILDDIR) && $(LLC) $(LLC_OPT) $< -O3 -filetype=asm -disable-cfi -disable-fp-elim -load=$(VMKIT_OBJ_ROOT)/$(VMKIT_BUILD_NAME)/lib/static-gc-printer$(SHLIBEXT) -o $@
+
+$(LIBDIR)/%.bc: $(BUILDDIR)/%-no-opt.bc
+	$(Verb) cp $< $@
+
+$(BUILDDIR)/%.bc: $(BUILDDIR)/%-no-opt.bc
+	$(Echo) "Optimizing $@"
+	$(Verb) $(LOPT) $< -disable-internalize -std-compile-opts -std-link-opts -inline -O3 -o $@
+
+$(BUILDDIR)/%-runtime-no-opt.bc: $(BUILDDIR)/%-binary-no-opt.bc $(LIBDIR)/PrepareCode.so
+	$(Echo) "Construct runtime version $@"
+	$(Verb) $(LOPT) $< -load=$(LIBDIR)/PrepareCode.so -disable-internalize --disable-opt -o $@
+
+$(BUILDDIR)/%-binary-no-opt.bc: $(BUILDDIR)/%-content.bc $(LIBDIR)/PrepareCode.so
+	$(Echo) "Injecting GC in $@"
+	$(Verb) $(LOPT) $< -load=$(LIBDIR)/PrepareCode.so -disable-internalize --disable-opt -StaticGCPass -o $@
+
+else
+
+$(LIBDIR)/%-content.bc: $(BUILDDIR)/%-content.bc
+	$(Echo) "Linking library with names $@"
+	$(Verb) mkdir -p $(LIBDIR) && $(LLVMLINK) $^ -o $@
+
+endif
+
+$(BUILDDIR)/%-content.bc: $(OBJ) $(patsubst %,$(LIBDIR)/%-content.bc,$(MODULE_EXT))
+	$(Echo) "Linking library $@"
+	$(Verb) mkdir -p $(LIBDIR) && $(LLVMLINK) $^ -o $@
+
+
+$(BUILDDIR)/module-name.c: Makefile $(LEVEL)/Makefile.rules $(LEVEL)/Makefile.config
+	$(Echo) Generating $@
+	$(Verb) mkdir -p $(BUILDDIR) && echo 'const char toyvm_module_path[] = "$(realpath $(LEVEL))/$(BUILD_MODE)/lib/$(MODULE)-runtime.bc";' > $@
+
+
+## .bc rules
+$(BUILDDIR)/%Lexer.h $(BUILDDIR)/%Lexer.c $(BUILDDIR)/%Parser.h $(BUILDDIR)/%Parser.c $(BUILDDIR)/%.tokens: %.g Makefile $(LEVEL)/Makefile.rules $(LEVEL)/Makefile.config
+	$(Echo) "Building lexer and parser from $<"
+	$(Verb) mkdir -p $(BUILDDIR) && $(ANTLR) -o $(BUILDDIR) $< > /dev/null
+
+$(BUILDDIR)/%.bc: %.cc Makefile $(LEVEL)/Makefile.rules $(LEVEL)/Makefile.config
+	$(Echo) Compiling $<
+	$(Verb) mkdir -p $(BUILDDIR) && if $(CLANGXX) $(CXXFLAGS) $(DEPEND_OPTIONS) -emit-llvm -c "$<" -o $@; $(DOM)
+	$(Verb) $(LOPT) $@ -O3 -std-compile-opts -disable-inlining -o $@
+
+$(BUILDDIR)/%.bc: $(BUILDDIR)/%.cc Makefile $(LEVEL)/Makefile.rules $(LEVEL)/Makefile.config
+	$(Echo) Compiling $<
+	$(Verb) mkdir -p $(BUILDDIR) && if $(CLANGXX) $(CXXFLAGS) $(DEPEND_OPTIONS) -emit-llvm -c "$<" -o "$@"; $(DOM)
+
+$(BUILDDIR)/%.bc: %.c Makefile $(LEVEL)/Makefile.rules $(LEVEL)/Makefile.config
+	$(Echo) Compiling $<
+	$(Verb) mkdir -p $(BUILDDIR) && if $(CLANG) $(CFLAGS) $(DEPEND_OPTIONS) -emit-llvm -c "$<" -o "$@"; $(DOM)
+
+$(BUILDDIR)/%.bc: $(BUILDDIR)/%.c Makefile $(LEVEL)/Makefile.rules $(LEVEL)/Makefile.config
+	$(Echo) Compiling $<
+	$(Verb) mkdir -p $(BUILDDIR) && if $(CLANG) $(CFLAGS) $(DEPEND_OPTIONS) -emit-llvm -c "$<" -o "$@"; $(DOM)
+
+
+$(LEVEL)/Makefile.config: $(LEVEL)/Makefile.config.in $(LEVEL)/configure
+	$(Echo) Reconfiguring project
+	$(Verb) cd $(LEVEL) && `cat config.log | grep "$$ ./configure" | cut -d'$$' -f2-`
+
+$(LEVEL)/configure: $(LEVEL)/autoconf/configure.ac $(LEVEL)/bootstrap.sh
+	$(Echo) Rebootstraping project
+	$(Verb) cd $(LEVEL) && ./bootstrap.sh
+
+
+tidy: tidy-subs
+	$(Echo) Cleaning temporary files
+	$(Verb) rm -f *~ \#*
+
+local-clean::
+	$(Echo) Cleaning compilation files
+	$(Verb) rm -Rf $(BUILDDIR)
+
+clean: clean-subs local-clean
+	$(Verb) rm -Rf $(BUILDDIR)
+	$(Verb) rm -Rf $(RELEASE)
+
+distclean: clean
+	$(Echo) Cleaning distribution
+	$(Verb) rm -Rf $(RELEASE)
+
+ifneq ($(MAKECMDGOALS),tidy)
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+-include $(DEPENDENCIES)
+endif
+endif
+
+endif
