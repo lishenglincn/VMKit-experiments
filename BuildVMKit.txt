@@ -1,0 +1,16 @@
+LLVM:
+	llvm/tools/clang
+	llvm/projects/compiler-rt
+
+./configure --enable-optimized
+make
+
+VMKit:
+./configure
+	--with-llvm-config-path=/home/mishun/cs/llvm-3.3/Release/bin/llvm-config
+	--with-classpath-impl=openjdk
+	--with-openjdk-path=/usr/lib/jvm/java-6-openjdk-amd64
+	--disable-assert
+export LD_LIBRARY_PATH=/usr/lib/jvm/java-6-openjdk-amd64/jre/lib/amd64/server
+make
+
