@@ -60,65 +60,93 @@ void ClArgumentsInfo::printVersion() {
 }
 
 
-//ToyVM::ToyVM(vmkit::BumpPtrAllocator& Alloc, ToyCompiler* compiler, vmkit::CompiledFrames** frames) :
-//	VirtualMachine(Alloc, frames) {
-//	this->compiler = compiler;
-//	compiler->vm = this;
-//}
+ToyVM::ToyVM(vmkit::BumpPtrAllocator& Alloc, ToyCompiler* compiler, vmkit::CompiledFrames** frames) :
+	VirtualMachine(Alloc, frames) {
+	this->compiler = compiler;
+	compiler->vm = this;
+}
 
-//size_t ToyVM::getObjectSize(gc* obj) {
-//	nyi();
-//  return 0;
-//}
+size_t ToyVM::getObjectSize(gc* obj) {
+	nyi();
+  return 0;
+}
 
-//void ToyVM::printMethod(vmkit::FrameInfo* FI, word_t ip, word_t addr) {
-//	if (FI->Metadata == NULL) {
-//		vmkit::MethodInfoHelper::print(ip, addr);
-//		return;
-//	}
-//}
+void ToyVM::printMethod(vmkit::FrameInfo* FI, word_t ip, word_t addr) {
+	if (FI->Metadata == NULL) {
+		vmkit::MethodInfoHelper::print(ip, addr);
+		return;
+	}
+}
 
-//void ToyVM::runApplication(int argc, char** argv) {
-//  argumentsInfo.argc = argc;
-//  argumentsInfo.argv = argv;
-//  /*
-//   * A completer
-//   * Question 2.2
-//   */
-//}
+void ToyVM::runApplication(int argc, char** argv) {
+  argumentsInfo.argc = argc;
+  argumentsInfo.argv = argv;
+  
+  ToyThread * thread = new ToyThread(this);
+  this->mainThread = thread;
+  thread->start(reinterpret_cast<void (*)(vmkit::Thread *)>(mainStart));
+}
+
+void ToyVM::nullPointerException()
+{
+	fprintf(stderr, "Null pointer exception\n");
+}
+
+void ToyVM::stackOverflowError()
+{
+	fprintf(stderr, "Stack overflow exception\n");
+}
+
+void ToyVM::traceObject(gc* object, word_t closure)
+{
+}
+
+void ToyVM::setType(gc* header, void* type)
+{
+}
+
+void * ToyVM::getType(gc* header)
+{
+	return nullptr;
+}
+
+void ToyVM::startCollection()
+{
+	fprintf(stderr, "GC starts\n");
+}
+
+void ToyVM::endCollection()
+{
+	fprintf(stderr, "GC ends\n");
+}
 
 
+void ToyVM::mainStart(ToyThread * thread)
+{
+	fprintf(stderr, "Starting ToyVM\n");
 
+	ToyVM* vm = thread->vm();
 
-//void ToyVM::mainStart(ToyThread* thread) {
-//	printf("Starting ToyVM\n");
-//
-//  ToyVM* vm = thread->vm();
-//
-//  vm->argumentsInfo.readArgs(vm);
-//
-//	if(vm->argumentsInfo.chronometer) {
-//		// Start timer
-//		printf("Starting timer\n");
-//		gettimeofday(&(vm->tbegin), NULL);
-//	}
+	vm->argumentsInfo.readArgs(vm);
 
-	/*
-	 * A Compléter Question 2.3 'execute'
-	 */
+	if(vm->argumentsInfo.chronometer) {
+		// Start timer
+		fprintf(stderr, "Starting timer\n");
+		gettimeofday(&(vm->tbegin), NULL);
+	}
 
-//	if(vm->argumentsInfo.chronometer) {
-//		// End timer
-//		gettimeofday(&(vm->tend), NULL);
-//		printf("Timer stopped\n");
-//		// Compute execution time
-//		vm->texec = ((double) (1000 * (vm->tend.tv_sec - vm->tbegin.tv_sec) + ((vm->tend.tv_usec - vm->tbegin.tv_usec) / 1000))) / 1000.;
-//		std::cout << "Execution time : " << vm->texec << " s" << std::endl;
-//	}
+	thread->execute();
 
-//	printf("Closing ToyVM\n");
-	/*
-	 * A completer
-	 * Question 2.2
-	 */
-//}
+	if(vm->argumentsInfo.chronometer) {
+		// End timer
+		gettimeofday(&(vm->tend), NULL);
+		fprintf(stderr, "Timer stopped\n");
+		// Compute execution time
+		vm->texec = ((double) (1000 * (vm->tend.tv_sec - vm->tbegin.tv_sec) + ((vm->tend.tv_usec - vm->tbegin.tv_usec) / 1000))) / 1000.;
+		std::cout << "Execution time : " << vm->texec << " s" << std::endl;
+	}
+
+	fprintf(stderr, "Closing ToyVM\n");
+	
+	thread->MyVM->exit();
+}

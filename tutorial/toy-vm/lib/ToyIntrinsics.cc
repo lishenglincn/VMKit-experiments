@@ -18,8 +18,8 @@ void ToyIntrinsics::loadCommonTypes(llvm::Module* selfModule) {
 	typeInt64  = llvm::Type::getInt64Ty(selfModule->getContext());
 
 #define z_getType(name) ({																			\
-		llvm::Type* t = selfModule->getTypeByName("class."name);	\
-		error_on(!t, "unable to find type: class."name);					\
+		llvm::Type* t = selfModule->getTypeByName("class." name);	\
+		error_on(!t, "unable to find type: class." name);					\
 		llvm::PointerType::get(t, 0);															\
 })
 

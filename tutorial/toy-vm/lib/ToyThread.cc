@@ -16,6 +16,17 @@
 
 using namespace Toy;
 
+ToyThread::ToyThread(ToyVM * vm)
+	: _vm(vm)
+{
+	this->MyVM = vm;
+}
+
+ToyVM* ToyThread::vm()
+{
+	return _vm;
+}
+
 typedef int (*jitPtr)(Picture*);
 
 /*
@@ -46,4 +57,6 @@ void ToyThread::execute(){
 //	/*
 //	 * A completer, Appel à Picture::print
 //	 */
+
+	vmkit::Collector::collect();
 }

@@ -17,8 +17,11 @@
 namespace Toy {
 	class ToyVM;
 
-	class ToyThread /* : ? */ {
-		public:
+	class ToyThread : public vmkit::MutatorThread {
+	private:
+		ToyVM * const _vm;
+
+	public:
 		ToyThread(ToyVM* vm);
 		ToyVM* vm();
 		void execute();

@@ -7,7 +7,7 @@ main_target=$(LIBDIR)/PrepareCode.so
 CFLAGS+=-fPIC -I$(LEVEL)/lib
 CXXFLAGS+=-fPIC -I$(LEVEL)/lib
 
-OBJ=$(patsubst %,$(LEVEL)/lib/.build/%.bc, \
+OBJ=$(patsubst %,$(LEVEL)/lib/$(BUILDDIR)/%.bc, \
 			util ToyCompiler module-name\
 	)
 

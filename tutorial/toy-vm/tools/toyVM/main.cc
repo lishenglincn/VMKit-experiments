@@ -14,24 +14,24 @@
 #include "vmkit/JIT.h"
 
 using namespace Toy;
-using namespace vmkit;
 
-extern CompiledFrames* frametables[];
+extern vmkit::CompiledFrames* frametables[];
 
-int main(int argc, char **argv){
-  // Initialize base components.
-  VmkitModule::initialise(argc, argv);
-  Collector::initialise(argc, argv);
+int main(int argc, char **argv)
+{
+	// Initialize base components.
+	vmkit::VmkitModule::initialise(argc, argv);
+	vmkit::Collector::initialise(argc, argv);
 
-  // Create the allocator that will allocate the bootstrap loader and the JVM.
-  vmkit::BumpPtrAllocator Allocator;
-  ToyJITCompiler* Comp = ToyJITCompiler::create();
+	// Create the allocator that will allocate the bootstrap loader and the JVM.
+	vmkit::BumpPtrAllocator Allocator;
+	ToyJITCompiler* Comp = ToyJITCompiler::create();
 
-/*
- * A completer
- */
+	ToyVM * vm = new(Allocator, "ToyVM") ToyVM(Allocator, Comp, frametables);
+	vm->runApplication(argc, argv);
+	vm->waitForExit();
 
-  System::Exit(0);
+	vmkit::System::Exit(0);
 
-  return 0;
+	return 0;
 }

@@ -51,7 +51,7 @@ namespace Toy {
 
 	/// ToyVM - A minimal Virtual Machine.
 	///
-	class ToyVM /* : ? */ {
+	class ToyVM : public vmkit::VirtualMachine {
 	private:
 		// Profiling vars
 		struct timeval tbegin,tend;
@@ -67,13 +67,23 @@ namespace Toy {
 		ToyCompiler* compiler;
 
 		/// ToyVM - Allocates a new Toy Virtual Machine.
-		///
-		ToyVM(vmkit::BumpPtrAllocator& Alloc, 
-						ToyCompiler* compiler, 
-						vmkit::CompiledFrames** frames);
+		ToyVM(vmkit::BumpPtrAllocator& Alloc, ToyCompiler* compiler, vmkit::CompiledFrames** frames);
+
+	public:
+		virtual size_t getObjectSize(gc* obj) override;
+		virtual void printMethod(vmkit::FrameInfo* FI, word_t ip, word_t addr) override;
+		virtual void runApplication(int argc, char** argv) override;
+		virtual void nullPointerException() override;
+		virtual void stackOverflowError() override;
+		virtual void traceObject(gc* object, word_t closure) override;
+		virtual void setType(gc* header, void* type) override;
+		virtual void* getType(gc* header) override;
+
+		virtual void startCollection() override;
+		virtual void endCollection() override;
 
 	private:
-
+		static void mainStart(ToyThread* thread);
 	};
 
 } // end namespace R

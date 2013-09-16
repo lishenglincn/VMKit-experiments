@@ -1,0 +1,7 @@
+Debug
+.Debug
+configure
+config.log
+config.status
+Makefile.config
+autom4te.cache
