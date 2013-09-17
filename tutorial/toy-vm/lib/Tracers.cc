@@ -18,3 +18,15 @@ using namespace Toy;
  *                                  Tracers                                   *
  ******************************************************************************/
 
+void MandelPix::tracer(word_t closure)
+{
+	fprintf(stderr, "MandelPix::tracer()\n");
+}
+
+void Picture::tracer(word_t closure)
+{
+	fprintf(stderr, "Picture::tracer()\n");
+	
+	if(this->buf != NULL)
+		markAndTrace(this, this->buf, closure);
+}

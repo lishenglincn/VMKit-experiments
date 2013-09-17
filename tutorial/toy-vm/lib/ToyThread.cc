@@ -58,5 +58,14 @@ void ToyThread::execute(){
 //	 * A completer, Appel à Picture::print
 //	 */
 
-	vmkit::Collector::collect();
+	{
+		TOY_VAR(MandelPix *, pix);
+		pix = MandelPix::doNew(1, 1);
+		pix->compute();
+
+		TOY_VAR(Picture *, p);
+		p = Picture::doNew(-3, 1, -1, 1, 4096, 2048);
+		p->compute();
+		p->print();
+	}
 }

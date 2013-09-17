@@ -23,7 +23,7 @@ namespace Toy {
 	/*
 	 * ToyObject root type, must extend gc class provided by VMKit.
 	 */
-	class ToyRoot: public gc {
+	class ToyRoot : public gc {
 	protected:
 		/*
 		 * This constructor is never called
@@ -38,7 +38,8 @@ namespace Toy {
 			void* res = 0;
 			llvm_gcroot(res, 0);
 			static T o;
-			res = gc::operator new(sz, o.getVirtualTable());
+			res = gc::operator new(sz, nullptr);
+			VirtualTable::setVirtualTable((gc *)res, const_cast<VirtualTable *>(VirtualTable::getVirtualTable(&o)));
 			return res;
 		}
 
@@ -62,7 +63,7 @@ namespace Toy {
 		 *  Trace function used for GC Collection. Mark every collectible objects
 		 *  contained in this one.
 		 */
-		virtual void tracer(word_t closure);
+		virtual void tracer(word_t closure) = 0;
 
 		/***************************************************
 		 *               Toy Virtual Methods               *
@@ -71,7 +72,7 @@ namespace Toy {
 		/*
 		 * Print method for ToyObject.
 		 */
-		virtual void print();
+		virtual void print() = 0;
 		virtual int compute() = 0;
 
 	};

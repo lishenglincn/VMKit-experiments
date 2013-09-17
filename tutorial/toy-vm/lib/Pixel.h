@@ -15,21 +15,21 @@
 namespace Toy {
 	class ToyRoot;
 
-	class Pixel /* : ? */ {
+	class Pixel : public ToyRoot {
 		public:
 		double x, y;
 	};
 
-	class MandelPix /* : ? */ {
+	class MandelPix : public Pixel {
 		public:
 			static MandelPix* doNew(double x, double y);
 
-			/*
-			 * A completer
-			 */
+			virtual int compute() override;
+			virtual void tracer(word_t closure) override;
+			virtual void print() override;
 	};
 
-	class Picture /* : ? */ {
+	class Picture : public ToyRoot {
 		public:
 			int size;
 			MandelPix* buf;
@@ -38,16 +38,13 @@ namespace Toy {
 			double xMin, xMax, yMin, yMax, xScale, yScale;
 			int width, height;
 
-			/*
-			 * Ce tableau sera "inliné" dans l'objet Picture lors du doNew()
-			 */
-			unsigned char data[1];
+			unsigned char data[16 * 1048 * 1024];
 
 			static Picture* doNew(double xMin, double xMax, double yMin, double yMax, int width, int height);
 
-			/*
-			 * A completer
-			 */
+			virtual int compute() override;
+			virtual void tracer(word_t closure) override;
+			virtual void print() override;
 	};
 
 	extern "C" int jitCompute(Picture* p);

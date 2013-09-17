@@ -61,14 +61,15 @@ void ClArgumentsInfo::printVersion() {
 
 
 ToyVM::ToyVM(vmkit::BumpPtrAllocator& Alloc, ToyCompiler* compiler, vmkit::CompiledFrames** frames) :
-	VirtualMachine(Alloc, frames) {
+	VirtualMachine(Alloc, frames)
+{
 	this->compiler = compiler;
 	compiler->vm = this;
 }
 
 size_t ToyVM::getObjectSize(gc* obj) {
 	nyi();
-  return 0;
+	return 0;
 }
 
 void ToyVM::printMethod(vmkit::FrameInfo* FI, word_t ip, word_t addr) {
@@ -87,6 +88,7 @@ void ToyVM::runApplication(int argc, char** argv) {
   thread->start(reinterpret_cast<void (*)(vmkit::Thread *)>(mainStart));
 }
 
+
 void ToyVM::nullPointerException()
 {
 	fprintf(stderr, "Null pointer exception\n");
@@ -97,15 +99,17 @@ void ToyVM::stackOverflowError()
 	fprintf(stderr, "Stack overflow exception\n");
 }
 
-void ToyVM::traceObject(gc* object, word_t closure)
+void ToyVM::traceObject(gc * object, word_t closure)
 {
+	static_cast<ToyRoot *>(object)->tracer(closure);
 }
 
-void ToyVM::setType(gc* header, void* type)
+void ToyVM::setType(gc * header, void * type)
 {
+	//fprintf(stderr, "ToyVM::setType\n");
 }
 
-void * ToyVM::getType(gc* header)
+void * ToyVM::getType(gc * header)
 {
 	return nullptr;
 }
@@ -136,6 +140,7 @@ void ToyVM::mainStart(ToyThread * thread)
 	}
 
 	thread->execute();
+	vmkit::Collector::collect();
 
 	if(vm->argumentsInfo.chronometer) {
 		// End timer

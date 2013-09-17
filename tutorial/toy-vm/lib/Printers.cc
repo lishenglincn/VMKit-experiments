@@ -9,11 +9,21 @@
 
 #include "ToyRoot.h"
 #include "Pixel.h"
+#include "util.h"
 
 using namespace Toy;
 
 
-//void Picture::print() {
-//	if(computed)
-//		Rasterfile::saveRasterfile((char*)"mandelbrot.ras", self);
-//}
+void Picture::print()
+{
+	asSelf(Picture);
+	
+	fprintf(stderr, "Picture::print()\n");
+	if(computed)
+		Rasterfile::saveRasterfile((char*)"mandelbrot.ras", self);
+}
+
+void MandelPix::print()
+{
+	fprintf(stderr, "MandelPix::print()\n");
+}
