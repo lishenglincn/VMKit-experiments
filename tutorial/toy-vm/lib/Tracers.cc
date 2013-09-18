@@ -26,7 +26,6 @@ void MandelPix::tracer(word_t closure)
 void Picture::tracer(word_t closure)
 {
 	fprintf(stderr, "Picture::tracer()\n");
-	
-	if(this->buf != NULL)
-		markAndTrace(this, this->buf, closure);
+
+	vmkit::Collector::markAndTrace(this, &(this->buf), closure);
 }

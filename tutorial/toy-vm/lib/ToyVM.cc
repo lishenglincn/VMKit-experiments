@@ -140,7 +140,6 @@ void ToyVM::mainStart(ToyThread * thread)
 	}
 
 	thread->execute();
-	vmkit::Collector::collect();
 
 	if(vm->argumentsInfo.chronometer) {
 		// End timer

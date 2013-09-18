@@ -46,11 +46,10 @@ int Picture::compute(){
 
 	for(int i = 0; i < _size; i++)
 	{
-		//TOY_VAR(MandelPix *, pix);
-		//pix = MandelPix::doNew(curX, curY);
-		//self->data[i] = static_cast<unsigned char>(pix->compute());
+		TOY_VAR(MandelPix *, pix);
+		pix = MandelPix::doNew(curX, curY);
 
-		self->buf = MandelPix::doNew(curX, curY);
+		vmkit::Collector::objectReferenceWriteBarrier(self, (gc **)&(self->buf), pix);
 		self->data[i] = static_cast<unsigned char>(self->buf->compute());
 
 		curX += _xScale;
@@ -86,10 +85,10 @@ int MandelPix::compute(){
 	double Z_im2 = y_orig*y_orig;
 
 	while((Z_re2 + Z_im2 < 4) && (_value < NB_ITER)) {
-		Z_re2 = Z_re*Z_re;
-		Z_im2 = Z_im*Z_im;
 		Z_im = 2*Z_re*Z_im + y_orig;
 		Z_re = Z_re2 - Z_im2 + x_orig;
+		Z_re2 = Z_re*Z_re;
+		Z_im2 = Z_im*Z_im;
 		_value++;
 	}
 	return _value;
