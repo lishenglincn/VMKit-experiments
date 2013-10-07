@@ -20,7 +20,6 @@ llvm::Module & makeLLVMModule(llvm::LLVMContext & context)
 {
 	auto & mod = *new llvm::Module("test", context);
 
-	auto * test = mod.getOrInsertFunction("test", llvm::Type::getVoidTy(context), nullptr);
 	auto * const puts = mod.getOrInsertFunction("puts", llvm::IntegerType::get(context, 32), llvm::IntegerType::get(context, 8)->getPointerTo(), nullptr);
 
 	auto * const main = llvm::cast<llvm::Function>(mod.getOrInsertFunction("main", llvm::Type::getVoidTy(context), nullptr));
@@ -31,7 +30,6 @@ llvm::Module & makeLLVMModule(llvm::LLVMContext & context)
 
 		llvm::Value * helloWorld = builder.CreateGlobalStringPtr("hello world!\n");
 
-		builder.CreateCall(test);
 		builder.CreateCall(puts, helloWorld);
 		builder.CreateRetVoid();
 	}
@@ -83,15 +81,11 @@ int main(int argc, char**argv)
 
 	{
 		auto * eb = llvm::EngineBuilder(&mod).create();
-
-		auto * const main = llvm::cast<llvm::Function>(mod.getOrInsertFunction("main", llvm::Type::getVoidTy(context), nullptr));
-		auto * f = (void (*)())eb->getPointerToFunction(main);
-
-		f();
+		auto * main = reinterpret_cast<void (*)()>(eb->getPointerToFunction(mod.getFunction("main")));
+		main();
 	}
 
 	delete &mod;
 
 	return 0;
 }
-
