@@ -47,24 +47,28 @@ public:
  * Compléter l'héritage de la classe ToyJITCompiler
  * Note : les méthodes virtuelles pures héritées sont implémentées dans ToyJITCompiler.cc
  */
-class ToyJITCompiler : public ToyCompiler /*, ? */ {
+class ToyJITCompiler : public ToyCompiler, public llvm::GVMaterializer {
 	public:
 
 		ToyJITListener listener;
 		llvm::ExecutionEngine* ee;
 
 		ToyJITCompiler();
-		~ToyJITCompiler();  
+		~ToyJITCompiler();
 
 		/*
 		 * Question 4.1
 		 * A compléter
 		 */
+		virtual bool isMaterializable(const llvm::GlobalValue *GV) const override;
+		virtual bool isDematerializable(const llvm::GlobalValue *GV) const override;
+		virtual bool Materialize(llvm::GlobalValue *GV, std::string *ErrInfo = 0) override;
+		virtual bool MaterializeModule(llvm::Module *M, std::string *ErrInfo = 0) override;
 
 		static ToyJITCompiler* create();
 		void* jitCompile();
 };
- 
+
 } // end namespace R
 
 #endif

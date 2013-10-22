@@ -45,8 +45,8 @@ namespace Toy {
 		llvm::Module*              selfModule;
 
 
-    ToyCompiler();
-    virtual ~ToyCompiler();
+		ToyCompiler();
+		virtual ~ToyCompiler();
 
 		ToyIntrinsics* getIntrinsics() { return &Intrinsics; }
 

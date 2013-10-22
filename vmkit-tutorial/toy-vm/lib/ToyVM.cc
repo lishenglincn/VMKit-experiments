@@ -60,8 +60,8 @@ void ClArgumentsInfo::printVersion() {
 }
 
 
-ToyVM::ToyVM(vmkit::BumpPtrAllocator& Alloc, ToyCompiler* compiler, vmkit::CompiledFrames** frames) :
-	VirtualMachine(Alloc, frames)
+ToyVM::ToyVM(vmkit::BumpPtrAllocator& Alloc, ToyCompiler* compiler, vmkit::CompiledFrames** frames)
+	: VirtualMachine(Alloc, frames)
 {
 	this->compiler = compiler;
 	compiler->vm = this;
@@ -116,12 +116,12 @@ void * ToyVM::getType(gc * header)
 
 void ToyVM::startCollection()
 {
-	fprintf(stderr, "GC starts\n");
+//	fprintf(stderr, "GC starts\n");
 }
 
 void ToyVM::endCollection()
 {
-	fprintf(stderr, "GC ends\n");
+//	fprintf(stderr, "GC ends\n");
 }
 
 

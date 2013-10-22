@@ -20,12 +20,12 @@ using namespace Toy;
 
 void MandelPix::tracer(word_t closure)
 {
-	fprintf(stderr, "MandelPix::tracer()\n");
+//	fprintf(stderr, "MandelPix::tracer()\n");
 }
 
 void Picture::tracer(word_t closure)
 {
-	fprintf(stderr, "Picture::tracer()\n");
+//	fprintf(stderr, "Picture::tracer()\n");
 
 	vmkit::Collector::markAndTrace(this, &(this->buf), closure);
 }

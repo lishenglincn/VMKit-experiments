@@ -98,8 +98,8 @@ int MandelPix::compute(){
 	 * A Decommenter des que la méthode compute de la classe Picture
 	 * est implémentée.
 	 */
-//extern "C" int64_t jitCompute(Picture* p){
-//	TOY_PARAM(p);
-//	p->compute();
-//	return 0;
-//}
+extern "C" int64_t jitCompute(Picture* p){
+	TOY_PARAM(p);
+	p->compute();
+	return 0;
+}

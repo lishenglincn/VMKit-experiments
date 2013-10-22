@@ -31,7 +31,7 @@
 #include "ToyCompiler.h"
 
 using namespace Toy;
-using namespace llvm;
+
 
 ToyCompiler::ToyCompiler() {
 	selfModule = loadSelfModule();
@@ -55,12 +55,11 @@ llvm::Module* ToyCompiler::loadSelfModule() {
 	 *
 	 */
 
-	//	if((err = llvm::MemoryBuffer::getFile( ? , buf))) {
-	//		warning("unable to open my own bitcode %s", err.message().c_str());
-	//	}
-	//
-	//	return llvm::ParseBitcodeFile(buf.take(), llvm::getGlobalContext());
-	return NULL;
+	if((err = llvm::MemoryBuffer::getFile(toyvm_module_path, buf))) {
+		warning("unable to open my own bitcode %s", err.message().c_str());
+	}
+
+	return llvm::ParseBitcodeFile(buf.take(), llvm::getGlobalContext());
 }
 
 
@@ -72,7 +71,8 @@ llvm::Module* ToyCompiler::loadSelfModule() {
  *
  */
 void ToyCompiler::generateCode(llvm::Function* func) {
-	llvm::Function* func_to_call = NULL;
+	llvm::Function * func_to_call = NULL;
+	func_to_call = llvmFunction();
 
 	/*
 	 * Question 4.2
@@ -81,15 +81,14 @@ void ToyCompiler::generateCode(llvm::Function* func) {
 
 	Assert(func_to_call, "jit function not found !");
 
-	llvm::BasicBlock* bb = llvm::BasicBlock::Create(func->getContext(), "entry", func);
+	llvm::BasicBlock * bb = llvm::BasicBlock::Create(func->getContext(), "entry", func);
 	llvm::Function::arg_iterator args = func->arg_begin();
 	llvm::IRBuilder<> builder(bb);
 	llvm::Value* ret = builder.CreateCall(func_to_call, args);
 	builder.CreateRet(ret);
 
 	// Verify basic block consistency
-	error_on(llvm::verifyFunction(*func, llvm::PrintMessageAction),
-			"Error on verification. Bad function generation on jit for \"%s\"", func->getName().data());
+	error_on(llvm::verifyFunction(*func, llvm::PrintMessageAction), "Error on verification. Bad function generation on jit for \"%s\"", func->getName().data());
 
 	/*
 	 * Question 4.4
@@ -110,9 +109,9 @@ void ToyCompiler::generateCode(llvm::Function* func) {
  * Note : Il est important d'affecter "vmkit" en tant que GC de la fonction
  * pour générer correctement les informations de GC.
  */
-llvm::Function* ToyCompiler::llvmFunction() {
-	llvm::Function* func = Function::Create(Intrinsics.toyFunctionType,
-			GlobalValue::ExternalLinkage, "toy-function", selfModule);
+llvm::Function * ToyCompiler::llvmFunction()
+{
+	llvm::Function * func = llvm::Function::Create(Intrinsics.toyFunctionType, llvm::GlobalValue::ExternalLinkage, "toy-function", selfModule);
 	func->setGC("vmkit");
 	return func;
 }

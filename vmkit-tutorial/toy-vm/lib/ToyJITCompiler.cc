@@ -35,28 +35,33 @@
 
 #include "ToyJITCompiler.h"
 
-
 using namespace Toy;
-using namespace llvm;
 
-void ToyJITListener::NotifyFunctionEmitted(const Function &F, void *Code, size_t Size,
-		const EmittedFunctionDetails &Details) {
+
+void ToyJITListener::NotifyFunctionEmitted(const llvm::Function & F, void * Code, size_t Size, const EmittedFunctionDetails & Details)
+{
 	Assert(F.hasGC());
+	fprintf(stderr, "function emitted\n");
 	/* Question 4.5
 	 * A Compléter
 	 */
 }
 
 
-ToyJITCompiler::ToyJITCompiler() : ToyCompiler(), listener(this) {
-	//	std::string err;
-	//	llvm::EngineBuilder engine (selfModule);
-	//	TargetOptions options;
-	//	options.NoFramePointerElim = true;
-	//	engine.setTargetOptions(options);
-	//	engine.setEngineKind(llvm::EngineKind::JIT);
-	//	engine.setErrorStr(&err);
-	//
+ToyJITCompiler::ToyJITCompiler()
+	: ToyCompiler()
+	, listener(this)
+{
+	fprintf(stderr, "ToyJITCompiler::ToyJITCompiler()\n");
+
+		std::string err;
+		llvm::EngineBuilder engine (selfModule);
+		llvm::TargetOptions options;
+		options.NoFramePointerElim = true;
+		engine.setTargetOptions(options);
+		engine.setEngineKind(llvm::EngineKind::JIT);
+		engine.setErrorStr(&err);
+
 
 	/*
 	 * Question : "Initialisation du cœur du compilateur JIT"
@@ -65,13 +70,15 @@ ToyJITCompiler::ToyJITCompiler() : ToyCompiler(), listener(this) {
 	 *
 	 * Instancier l'executionEngine (ee) et decommenter le code
 	 */
+		
+		ee = engine.create();
 
-	//	 			ee->RegisterJITEventListener(&listener)
-	//	      ee->DisableLazyCompilation(0)
-	//	      ee->addModule(selfModule)
-	//	      selfModule->setDataLayout(ee->getTargetData()->getStringRepresentation());
-	//	      selfModule->setMaterializer(this);
-	//				selfModule->setTargetTriple(vmkit::VmkitModule::getHostTriple());
+		ee->RegisterJITEventListener(&listener);
+		ee->DisableLazyCompilation(0);
+		ee->addModule(selfModule);
+		selfModule->setDataLayout(ee->getDataLayout()->getStringRepresentation());
+		selfModule->setMaterializer(this);
+		selfModule->setTargetTriple(vmkit::VmkitModule::getHostTriple());
 
 	/*
 	 * A completer
@@ -80,18 +87,18 @@ ToyJITCompiler::ToyJITCompiler() : ToyCompiler(), listener(this) {
 	 * symbol correspondant.
 	 *
 	 */
-	//	for(llvm::Module::iterator cur=selfModule->begin(), end=selfModule->end(); cur!=end; cur++) {
-	//		void* ptr = dlsym(RTLD_DEFAULT, cur->getName().data());
-	//		if(ptr){
-	//			// Faire le mapping ici
-	//		}
-	//	}
-	//	for(llvm::Module::global_iterator cur=selfModule->global_begin(), end=selfModule->global_end(); cur!=end; cur++) {
-	//		void* ptr = dlsym(RTLD_DEFAULT, cur->getName().data());
-	//		if(ptr){
-	//			// Faire le mapping ici
-	//		}
-	//	}
+		for(llvm::Module::iterator cur=selfModule->begin(), end=selfModule->end(); cur!=end; cur++) {
+			void* ptr = dlsym(RTLD_DEFAULT, cur->getName().data());
+			if(ptr){
+				// Faire le mapping ici
+			}
+		}
+		for(llvm::Module::global_iterator cur=selfModule->global_begin(), end=selfModule->global_end(); cur!=end; cur++) {
+			void* ptr = dlsym(RTLD_DEFAULT, cur->getName().data());
+			if(ptr){
+				// Faire le mapping ici
+			}
+		}
 }
 
 
@@ -100,37 +107,38 @@ ToyJITCompiler::ToyJITCompiler() : ToyCompiler(), listener(this) {
  * Question 4.1
  * Inherited methods from ?
  */
-//bool ToyJITCompiler::MaterializeModule(llvm::Module *M, std::string *ErrInfo) {
-//	nyi();
-//	abort();
-//	return false;
-//}
-//
-//bool ToyJITCompiler::isDematerializable(const llvm::GlobalValue *GV) const {
-//	return 0;
-//}
-//
-//bool ToyJITCompiler::Materialize(llvm::GlobalValue *GV, std::string *ErrInfo) {
-//	llvm::Function* F = llvm::dyn_cast<llvm::Function>(GV);
-//
-//	if(!F || !F->isMaterializable())
-//		return false;
-//
-//	generateCode(F);
-//	return false;
-//}
-//bool ToyJITCompiler::isMaterializable(const llvm::GlobalValue *GV) const {
-//	const llvm::Function *F = llvm::dyn_cast<const llvm::Function>(GV);
-//	return F && F->isDeclaration() && !strncmp(GV->getName().data(), "toy-function", 12);
-//}
+bool ToyJITCompiler::MaterializeModule(llvm::Module *M, std::string *ErrInfo) {
+	nyi();
+	abort();
+	return false;
+}
+
+bool ToyJITCompiler::isDematerializable(const llvm::GlobalValue *GV) const {
+	return 0;
+}
+
+bool ToyJITCompiler::Materialize(llvm::GlobalValue *GV, std::string *ErrInfo) {
+	llvm::Function* F = llvm::dyn_cast<llvm::Function>(GV);
+
+	if(!F || !F->isMaterializable())
+		return false;
+
+	generateCode(F);
+	return false;
+}
+
+bool ToyJITCompiler::isMaterializable(const llvm::GlobalValue *GV) const {
+	const llvm::Function *F = llvm::dyn_cast<const llvm::Function>(GV);
+	return F && F->isDeclaration() && !strncmp(GV->getName().data(), "toy-function", 12);
+}
 /*****************************************************************************/
 
 
 
 ToyJITCompiler::~ToyJITCompiler() {
 	// ee n'est pas encore défini
-	//  ee->removeModule(selfModule);
-	//  delete ee;
+	ee->removeModule(selfModule);
+	delete ee;
 }
 
 
@@ -141,7 +149,8 @@ ToyJITCompiler* ToyJITCompiler::create() {
 
 
 
-void* ToyJITCompiler::jitCompile() {
+void* ToyJITCompiler::jitCompile()
+{
 	vmkit::VmkitModule::protectIR();
 
 	llvm::Function* func = llvmFunction();

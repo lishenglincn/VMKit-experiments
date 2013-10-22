@@ -10,52 +10,50 @@
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 
-using namespace llvm;
 
 namespace Toy {
 
-  class FunctionInliner : public FunctionPass {
-  public:
-    static char ID;
+	class FunctionInliner : public llvm::FunctionPass {
+	public:
+		static char ID;
 
 		ToyCompiler* compiler;
-		llvm::SmallPtrSet<const Function*, 16> NeverInline;
+		llvm::SmallPtrSet<const llvm::Function *, 16> NeverInline;
 		llvm::InlineCostAnalysis CA;
 		unsigned int inlineThreshold;
 
-		FunctionInliner() : FunctionPass(ID){}
-    FunctionInliner(ToyCompiler* compiler, unsigned int th=225) : FunctionPass(ID) { this->compiler = compiler; inlineThreshold = th; }
+		FunctionInliner() : FunctionPass(ID) {}
+		FunctionInliner(ToyCompiler* compiler, unsigned int th=225) : FunctionPass(ID) { this->compiler = compiler; inlineThreshold = th; }
 
-    virtual const char* getPassName() const {
-      return "incrementally inline functions";
-    }
+		virtual const char* getPassName() const {
+			return "incrementally inline functions";
+		}
 
-		InlineCost getInlineCost(CallSite CS) {
+		llvm::InlineCost getInlineCost(llvm::CallSite CS) {
 			return CA.getInlineCost(CS, inlineThreshold);
 		}
 
-    virtual bool runOnFunction(Function &F);
-  private:
-  };
+		virtual bool runOnFunction(llvm::Function &F);
+	private:
+	};
 
-  char FunctionInliner::ID = 0;
-  RegisterPass<FunctionInliner> X("FunctionInliner",
-  															"Inlining Pass that inlines evaluator's functions.");
+	char FunctionInliner::ID = 0;
+	llvm::RegisterPass<FunctionInliner> X("FunctionInliner", "Inlining Pass that inlines evaluator's functions.");
 
-	bool FunctionInliner::runOnFunction(Function& F) {
+	bool FunctionInliner::runOnFunction(llvm::Function & F) {
 		bool Changed = false;
-		const DataLayout *TD = getAnalysisIfAvailable<DataLayout>();
-		for (Function::iterator BI = F.begin(), BE = F.end(); BI != BE; BI++) { 
-			BasicBlock *Cur = BI; 
+		const llvm::DataLayout *TD = getAnalysisIfAvailable<llvm::DataLayout>();
+		for (llvm::Function::iterator BI = F.begin(), BE = F.end(); BI != BE; BI++) { 
+			llvm::BasicBlock *Cur = BI; 
 
-			for (BasicBlock::iterator II = Cur->begin(), IE = Cur->end(); II != IE;) {
-				Instruction *I = II++;
-				if (I->getOpcode() != Instruction::Call &&
-						I->getOpcode() != Instruction::Invoke) {
+			for (llvm::BasicBlock::iterator II = Cur->begin(), IE = Cur->end(); II != IE;) {
+				llvm::Instruction *I = II++;
+				if (I->getOpcode() != llvm::Instruction::Call &&
+						I->getOpcode() != llvm::Instruction::Invoke) {
 					continue;
 				}
-				CallSite Call(I);
-				Function* Temp = Call.getCalledFunction();
+				llvm::CallSite Call(I);
+				llvm::Function* Temp = Call.getCalledFunction();
 
 				if(!Temp){
 					continue;
@@ -68,10 +66,10 @@ namespace Toy {
 				if(!Temp->isDeclaration()) {
 					llvm::InlineCost cost = getInlineCost(Call);
 					if(cost.isAlways() || (!cost.isNever() && cost.getCost() < inlineThreshold)) {
-//						jitprintf("*** Inline %s into %s [%d] ***\n", Temp->getName().data(), F.getName().data(), cost.isAlways()? -1 : cost.getValue());
+						printf("*** Inline %s into %s [%d] ***\n", Temp->getName().data(), F.getName().data(), cost.isAlways()? -1 : cost.getCost());
 						llvm::InlineFunctionInfo IFI(NULL, TD);
 						Changed |= llvm::InlineFunction(Call, IFI, false);
-//						jitprintf("*** Inline Done ***\n");
+						printf("*** Inline Done ***\n");
 						if(Changed){
 							II = Cur->begin();
 							continue;
@@ -84,7 +82,7 @@ namespace Toy {
 		return Changed;
 	}
 
-	FunctionPass* createFunctionInlinerPass(ToyCompiler* compiler) {
+	llvm::FunctionPass* createFunctionInlinerPass(ToyCompiler* compiler) {
 		return new FunctionInliner(compiler);
 	}
 
